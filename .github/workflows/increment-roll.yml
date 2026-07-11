@@ -1,5 +1,8 @@
 name: Increment roll every minute
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: '*/1 * * * *'
@@ -30,13 +33,28 @@ jobs:
       - name: Commit and push if changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSH_PAT: ${{ secrets.PUSH_PAT }}
+          COMMIT_NAME: ${{ secrets.COMMIT_NAME }}
+          COMMIT_EMAIL: ${{ secrets.COMMIT_EMAIL }}
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "avirupmazumder82299@gmail.com"
+          if [ -n "$COMMIT_NAME" ]; then
+            git config --global user.name "$COMMIT_NAME"
+          else
+            git config --global user.name "${{ github.actor }}"
+          fi
+          if [ -n "$COMMIT_EMAIL" ]; then
+            git config --global user.email "$COMMIT_EMAIL"
+          else
+            git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          fi
           if git status --porcelain | grep -q '^ M data/repo.json\|^?? data/repo.json'; then
             git add data/repo.json
             git commit -m "ci: increment roll"
-            git push
+            BRANCH=${GITHUB_REF#refs/heads/}
+            if [ -n "$PUSH_PAT" ]; then
+              git remote set-url origin https://x-access-token:${PUSH_PAT}@github.com/${{ github.repository }}.git
+            fi
+            git push origin HEAD:$BRANCH
           else
             echo "No changes to commit"
           fi
