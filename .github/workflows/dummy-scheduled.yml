@@ -1,0 +1,21 @@
+name: Dummy scheduled workflow
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  run-dummy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create marker file
+        run: |
+          echo "Triggered at $(date -u)" >> dummy-run.log
+
+      
